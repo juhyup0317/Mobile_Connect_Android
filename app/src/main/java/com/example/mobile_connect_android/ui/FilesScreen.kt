@@ -33,7 +33,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,7 +61,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -111,7 +109,6 @@ fun FilesScreen(
 
     var promptDialog by remember { mutableStateOf<PromptType?>(null) }
     var promptText by remember { mutableStateOf(TextFieldValue("")) }
-    var newFileFormat by remember { mutableStateOf(NewFileFormat.all.first()) }
     var deleteConfirmEntry by remember { mutableStateOf<Entry?>(null) }
     var bulkDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -215,7 +212,11 @@ fun FilesScreen(
                                     Icon(painterResource(R.drawable.ic_back), contentDescription = "Back")
                                 }
                             }
-                            if (isSelecting) {
+                            if (!isSelecting) {
+                                TextButton(onClick = { isSelecting = true }) {
+                                    Text("Select")
+                                }
+                            } else {
                                 TextButton(onClick = {
                                     isSelecting = false
                                     selectedEntries = emptySet()
@@ -248,20 +249,10 @@ fun FilesScreen(
                                 }
                                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                     DropdownMenuItem(
-                                        text = { Text("Select") },
-                                        enabled = visibleEntries.isNotEmpty(),
-                                        onClick = {
-                                            showMenu = false
-                                            isSelecting = true
-                                        }
-                                    )
-                                    HorizontalDivider()
-                                    DropdownMenuItem(
                                         text = { Text("New File") },
                                         onClick = {
                                             showMenu = false
                                             promptText = TextFieldValue("")
-                                            newFileFormat = NewFileFormat.all.first()
                                             promptDialog = PromptType.NEW_FILE
                                         }
                                     )
@@ -482,8 +473,7 @@ fun FilesScreen(
             PromptType.NEW_FOLDER -> "New folder" to "Create"
             is PromptType.RENAME -> "Rename" to "Rename"
         }
-        val typed = promptText.text.trim()
-        val name = if (prompt == PromptType.NEW_FILE && typed.isNotEmpty()) NewFileFormat.apply(typed, newFileFormat) else typed
+        val name = promptText.text.trim()
         val original = (prompt as? PromptType.RENAME)?.entry?.name
         val nameError = when {
             name.contains('/') -> "Names can't contain /"
@@ -506,11 +496,7 @@ fun FilesScreen(
             scope.launch {
                 try {
                     when (prompt) {
-                        PromptType.NEW_FILE -> {
-                            val created = Path.join(currentPath, name)
-                            model.api.touch(created)
-                            onOpenFile(created)
-                        }
+                        PromptType.NEW_FILE -> model.api.touch(Path.join(currentPath, name))
                         PromptType.NEW_FOLDER -> model.api.mkdir(Path.join(currentPath, name))
                         is PromptType.RENAME -> model.api.rename(Path.join(currentPath, prompt.entry.name), Path.join(currentPath, name))
                     }
@@ -535,31 +521,10 @@ fun FilesScreen(
                 focusRequester.requestFocus()
                 keyboard?.show()
             }
-            if (prompt == PromptType.NEW_FILE) {
-                // The format, right under the title: its extension is added to the name.
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    NewFileFormat.all.forEach { format ->
-                        FilterChip(
-                            selected = format == newFileFormat,
-                            onClick = { newFileFormat = format },
-                            label = { Text(if (format.isEmpty()) "None" else ".$format", fontFamily = FontFamily.Monospace) }
-                        )
-                    }
-                }
-            }
             OutlinedTextField(
                 value = promptText,
                 onValueChange = { promptText = it },
                 label = { Text(if (prompt == PromptType.NEW_FOLDER) "Folder name" else "File name") },
-                suffix = if (prompt == PromptType.NEW_FILE && newFileFormat.isNotEmpty() && !typed.endsWith(".$newFileFormat", ignoreCase = true)) {
-                    { Text(".$newFileFormat", fontFamily = FontFamily.Monospace) }
-                } else null,
                 singleLine = true,
                 isError = nameError != null,
                 supportingText = nameError?.let { { Text(it) } },
@@ -637,15 +602,6 @@ class FolderNavigation(start: String) {
     fun back() {
         if (history.isNotEmpty()) path = history.removeAt(history.lastIndex)
     }
-}
-
-/** The formats offered for a new file, the first one the default; "" means no extension (Makefile, Dockerfile). */
-object NewFileFormat {
-    val all = listOf("txt", "md", "py", "js", "ts", "json", "html", "css", "sh", "yaml", "")
-
-    /** The name with the format's extension added, unless it already ends with it. */
-    fun apply(name: String, format: String): String =
-        if (format.isEmpty() || name.endsWith(".$format", ignoreCase = true)) name else "$name.$format"
 }
 
 sealed class PromptType {
