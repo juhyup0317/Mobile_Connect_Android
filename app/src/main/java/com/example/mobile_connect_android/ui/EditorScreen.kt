@@ -46,7 +46,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -106,6 +108,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+
+/** The Save button's blue, the same as on iOS. */
+private val SaveBlue = Color(0xFF0A84FF)
 
 /** Opens a file from the server: text is edited in place, images and PDFs are previewed, anything else can be opened or shared. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -227,15 +232,22 @@ fun EditorScreen(
                             tint = if (voiceState != VoiceInputManager.State.IDLE) Color(0xFFC29BFF) else Color.White
                         )
                     }
-                    Button(
+                    // Save: a blue check, greyed out while there is nothing to save.
+                    FilledIconButton(
                         onClick = ::save,
                         enabled = document.dirty && !document.saving,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = SaveBlue,
+                            contentColor = Color.White,
+                            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        ),
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         if (document.saving) {
                             CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
                         } else {
-                            Text("Save")
+                            Icon(painterResource(R.drawable.ic_check), contentDescription = "Save")
                         }
                     }
                 } else if (document.localFile != null) {

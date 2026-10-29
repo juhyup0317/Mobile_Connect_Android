@@ -133,7 +133,12 @@ fun TerminalsListScreen(
             } else if (sessions.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("💻", fontSize = 48.sp)
+                        Icon(
+                            painterResource(R.drawable.ic_term_shell),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(48.dp)
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text("No Active Terminals", color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -157,14 +162,12 @@ fun TerminalsListScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = when (session.preset) {
-                                        Preset.SHELL -> "💻"
-                                        Preset.CLAUDE, Preset.CODEX -> "✨"
-                                        Preset.COPILOT -> "⚙️"
-                                    },
-                                    fontSize = 20.sp,
-                                    modifier = Modifier.padding(end = 12.dp)
+                                // Line icons: a terminal window for a shell, sparkles for an AI CLI.
+                                Icon(
+                                    painterResource(if (session.preset == Preset.SHELL) R.drawable.ic_term_shell else R.drawable.ic_term_ai),
+                                    contentDescription = session.preset.title,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(end = 14.dp).size(24.dp)
                                 )
                                 Column {
                                     Text(session.displayName(path), color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp, fontWeight = FontWeight.Medium)
