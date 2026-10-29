@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Mobile_connect_android" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Black from the first frame, so launch doesn't flash white before the app draws. -->
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>
